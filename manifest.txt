@@ -1,0 +1,1 @@
+Main-Class: bau5.programs.liteinstaller.LiteInstaller
