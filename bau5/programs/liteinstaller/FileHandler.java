@@ -5,7 +5,9 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 
 /**
  * 
@@ -24,6 +26,7 @@ public class FileHandler
 	public ArrayList<File[]> mcFileList = null;
 	
 	private String pcMCPath = System.getProperty("user.home") +"/appdata/roaming/.minecraft/";
+	public String LIPath   = System.getProperty("user.home") +"/appdata/roaming/.liteinstaller/";
 	
 	public FileHandler()
 	{
@@ -49,6 +52,32 @@ public class FileHandler
 					continue second;
 				}else{
 					dirTarget = new String(pcMCPath + (f.getAbsolutePath().substring(f.getAbsolutePath().indexOf("files") +6)));
+					target = new File(dirTarget);
+					core.gui.log("Target is: " +target.getAbsolutePath());
+					copyFile(f, target);
+				}
+			}
+		}
+	}
+	public void moveAllMC(File dir) {		
+		String dirTarget = null;
+		File target = null;
+		initMCFileTree();
+		System.out.println(mcFileList.size());
+		for(File[] entry : mcFileList){
+			second : for(File f : entry){
+				if(f.isDirectory()){
+					core.gui.log("Into directory: " +f.getName());
+					dirTarget = new String(LIPath +"/backups/" +dir.getName() +"/" +(f.getAbsolutePath().substring(f.getAbsolutePath().indexOf(".minecraft") +11)));
+					System.out.println(dirTarget);
+					target = new File(dirTarget);
+					if(!target.exists()){
+						core.gui.log("Target directory doesn't exist. Creating.");
+						target.mkdir();
+					}
+					continue second;
+				}else{
+					dirTarget = new String(LIPath +"/backups/" +dir.getName() +"/" +(f.getAbsolutePath().substring(f.getAbsolutePath().indexOf(".minecraft") +11)));
 					target = new File(dirTarget);
 					core.gui.log("Target is: " +target.getAbsolutePath());
 					copyFile(f, target);
@@ -96,7 +125,7 @@ public class FileHandler
 		if(!base.exists() || files == null || files.length == 0){
 			System.out.println("No Files Found.");
 			base.mkdir();
-			core.dialogError(0);
+			core.dialog(0);
 			return;
 		}else{
 			fileList.add(files);
@@ -116,9 +145,9 @@ public class FileHandler
 		File[] files = null;
 		files = base.listFiles();
 		if(!base.exists() || files == null || files.length == 0){
-			System.out.println("No Files Found.");
+			System.out.println("No files found in Minecraft directory.");
 			base.mkdir();
-			core.dialogError(0);
+			core.dialog(3);
 			return;
 		}else{
 			mcFileList.add(files);
@@ -151,6 +180,8 @@ public class FileHandler
 					processDirectory(fi);
 				}
 			}
+			if(temp[0].getAbsolutePath().contains(".minecraft"))
+				mcFileList.add(temp);
 		}
 	}	
 	
@@ -195,6 +226,8 @@ public class FileHandler
 		FileChannel destination;
 		try{
 			source = new FileInputStream(sourceFile).getChannel();
+			if(!dest.getParentFile().exists())
+				dest.getParentFile().mkdirs();
 			destination = new FileOutputStream(dest).getChannel();
 			
 			long count = 0;
@@ -204,6 +237,55 @@ public class FileHandler
 			destination.close();
 		} catch (IOException ex){
 			ex.printStackTrace();
+		}
+	}
+	
+	public void moveMC() {
+		File mc = new File(pcMCPath);
+		File LIDir = new File(LIPath );
+		File dest = new File(LIPath +"/backups/");
+		if(!mc.exists()){
+			core.gui.log("Minecraft folder does not exist. Run once.");
+			core.dialog(1);
+			return;
+		}
+		if(!LIDir.exists()){
+			core.gui.log("Making home folder.");
+			LIDir.mkdir();
+		}
+		if(!dest.exists()){
+			core.gui.log("Making backup folder.");
+			dest.mkdir();
+		}
+		Date d = new Date();
+		SimpleDateFormat ft = new SimpleDateFormat("hh-mm-ss'_'yyyy-MM-dd");
+		File newMC = new File(LIPath +"/backups/" +ft.format(d) +"/");
+		core.gui.log("Creating backup at: " +newMC.getPath());
+		
+		if(newMC.mkdir()){
+			moveAllMC(newMC);
+		}
+		deleteDirectory(mc);
+	}
+
+	private void deleteDirectory(File mc) 
+	{
+		for(File f : mc.listFiles()){
+			if(f.isDirectory()){
+				clearDirectory(f);
+				f.delete();
+			}else
+				f.delete();
+		}
+	}
+	private void clearDirectory(File dir){
+		for(File f : dir.listFiles()){
+			if(!f.isDirectory())
+				f.delete();
+			else{
+				clearDirectory(f);
+				f.delete();
+			}
 		}
 	}
 }

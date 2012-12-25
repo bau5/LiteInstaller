@@ -2,6 +2,7 @@ package bau5.programs.liteinstaller;
 
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.Point;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -29,25 +30,35 @@ import javax.swing.tree.DefaultMutableTreeNode;
 public class LiteGui extends JFrame implements TreeSelectionListener
 {
 	private LiteInstaller core = LiteInstaller.instance;
-	private JTextArea logField = new JTextArea(22,30);
+	public JTextArea logArea;
 	private JPanel mainPanel;
 	private JTree mainTree;
 	private JTree mcTree;
-	public LiteGui(){
-	    
+	
+	public LiteGui(Point p){
+
 		this.setTitle("LiteInstaller");
 		this.setSize(800, 475);
 		
-		Dimension dimension = Toolkit.getDefaultToolkit().getScreenSize();
-	    int x = (int) ((dimension.getWidth() - this.getWidth()) / 2);
-	    int y = (int) ((dimension.getHeight() - this.getHeight()) / 2);
-	    this.setLocation(x, y);
+		if(core.getLogArea() != null)
+			logArea = core.getLogArea();
+		else
+			 logArea= new JTextArea(22,30);
 		
-		logField.setLineWrap(true);
-		logField.setWrapStyleWord(true);
-		logField.setEditable(false);
+		if(p != null){
+			this.setLocation(p);
+		}else{
+			Dimension dimension = Toolkit.getDefaultToolkit().getScreenSize();
+		    int x = (int) ((dimension.getWidth() - this.getWidth()) / 2);
+		    int y = (int) ((dimension.getHeight() - this.getHeight()) / 2);
+		    this.setLocation(x, y);
+		}
+			
+		logArea.setLineWrap(true);
+		logArea.setWrapStyleWord(true);
+		logArea.setEditable(false);
 		
-		JScrollPane logFieldScroller = new JScrollPane(logField);
+		JScrollPane logFieldScroller = new JScrollPane(logArea);
 		logFieldScroller.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
 		logFieldScroller.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 		
@@ -60,17 +71,23 @@ public class LiteGui extends JFrame implements TreeSelectionListener
 		begin.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent ev){
 				moveFiles();
+				refresh();
 			}
 		});
 		JButton refresh = new JButton("Refresh");
 		refresh.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent ev){
-				core.fh.initFileTree();
-				core.fh.initMCFileTree();
-				core.gui.dispose();
-				core.gui = new LiteGui();
+				refresh();
 			}
 		});
+		JButton moveMC = new JButton("Move MC");
+		moveMC.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent ev){
+				moveMC();
+				refresh();
+			}
+		});
+		moveMC.setToolTipText("This will move any prexisting Minecraft files.");
 		mainTree = makeTree(viewPanel);
 		mcTree = makeMCTree(viewPanel);
 		JScrollPane treeScroller = new JScrollPane(mainTree);
@@ -92,9 +109,19 @@ public class LiteGui extends JFrame implements TreeSelectionListener
 		mainPanel.add(jtp);
 		mainPanel.add(begin);
 		mainPanel.add(refresh);
+		mainPanel.add(moveMC);
 		this.add(mainPanel);
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		this.setVisible(true);
+	}
+
+	protected void refresh() {
+		core.fh.initFileTree();
+		core.fh.initMCFileTree();
+		core.setLogArea(this.logArea);
+		Point tempLoc = core.gui.getLocationOnScreen();
+		core.gui.dispose();
+		core.gui = new LiteGui(tempLoc);
 	}
 
 	public void moveFiles(){
@@ -105,6 +132,10 @@ public class LiteGui extends JFrame implements TreeSelectionListener
 			core.fh.moveAll();
 		}
 	}
+	public void moveMC(){
+		core.fh.moveMC();
+		core.dialog(2);
+	}
 	@Override
 	public void valueChanged(TreeSelectionEvent arg0) 
 	{
@@ -112,7 +143,7 @@ public class LiteGui extends JFrame implements TreeSelectionListener
 	}
 	
 	public void log(String message){
-		logField.append(message +"\n");
+		logArea.append(message +"\n");
 	}
 	
 	public JTree makeTree(JPanel parent){
