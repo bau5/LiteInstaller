@@ -36,6 +36,10 @@ public class FileHandler
 	}
 
 	public void moveAll() {
+		
+		for(File[] entry : fileList){
+			System.out.println(entry[0].getParent());
+		}
 		String dirTarget = null;
 		File target = null;
 		for(File[] entry : fileList){
@@ -54,7 +58,10 @@ public class FileHandler
 					dirTarget = new String(pcMCPath + (f.getAbsolutePath().substring(f.getAbsolutePath().indexOf("files") +6)));
 					target = new File(dirTarget);
 					core.gui.log("Target is: " +target.getAbsolutePath());
-					copyFile(f, target);
+					if(target.exists()){
+						System.out.println("Target exists, cancelling move." +target.getName());
+					}else
+						copyFile(f, target);
 				}
 			}
 		}
@@ -82,37 +89,6 @@ public class FileHandler
 					core.gui.log("Target is: " +target.getAbsolutePath());
 					copyFile(f, target);
 				}
-			}
-		}
-	}
-	
-	public void moveFiles(File files[], String name)
-	{
-		if(files.length > 0){
-			name = files[0].getParent();
-			name = name.substring(name.lastIndexOf("\\") + 1);
-		}
-		if(files.length <= 0){
-			core.gui.log(name +" is empty, skipping.");
-			return;
-		}
-		File destFolder = new File(pcMCPath + "/" +name + "/");
-		File destFile = null;
-		if(destFolder.exists()){
-			core.gui.log("Destination for " +name +" found, initiating move.");
-			if(destFolder.list().length != 0){
-				core.gui.log("Mods folder already populated, results unpredictable.");
-			}
-			main: for(File f : files){
-				System.out.println(f.getName());
-				for(String str : destFolder.list()){
-					if(str.equalsIgnoreCase(f.getName())){
-						core.gui.log("File \"" +str +"\" already exists in " +name +", skipping.");
-						continue main;
-					}
-				}
-				destFile = new File(pcMCPath +"/" +name +"/" +f.getName());
-				copyFile(f, destFile);
 			}
 		}
 	}
@@ -172,7 +148,8 @@ public class FileHandler
 				coremods = temp;
 			else if(f.getName().equalsIgnoreCase("config"))
 				configs = temp;
-			fileList.add(temp);
+			if(!temp[0].getAbsolutePath().contains(".minecraft"))
+				fileList.add(temp);
 			if(core.gui != null)
 				core.gui.log("Directory \"" +f.getName() +"\" added.");
 			for(File fi : temp){
@@ -227,7 +204,7 @@ public class FileHandler
 		try{
 			source = new FileInputStream(sourceFile).getChannel();
 			if(!dest.getParentFile().exists())
-				dest.getParentFile().mkdirs();
+				dest.getParentFile().mkdir();
 			destination = new FileOutputStream(dest).getChannel();
 			
 			long count = 0;
@@ -258,7 +235,7 @@ public class FileHandler
 			dest.mkdir();
 		}
 		Date d = new Date();
-		SimpleDateFormat ft = new SimpleDateFormat("hh-mm-ss'_'yyyy-MM-dd");
+		SimpleDateFormat ft = new SimpleDateFormat("MM-dd-yyyy'_'hh-mm-ss");
 		File newMC = new File(LIPath +"/backups/" +ft.format(d) +"/");
 		core.gui.log("Creating backup at: " +newMC.getPath());
 		

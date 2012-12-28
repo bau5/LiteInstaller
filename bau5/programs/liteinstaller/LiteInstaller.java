@@ -1,7 +1,5 @@
 package bau5.programs.liteinstaller;
 
-import java.awt.Frame;
-
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JTextArea;
